@@ -14,15 +14,15 @@ export default function ProductsPage() {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching products with category names...');
+      console.log('Fetching products...');
       
-      // ✅ FIXED: Get category and gsm NAMES, not just IDs
+      // Get basic product data
       const response = await fetch(
-        'https://enpcdhhfsnmlhlplnycu.supabase.co/rest/v1/products?select=id,sku,product_name,category_id,gsm_id,category:category_id(name),gsm:gsm_id(name)&limit=20',
+        'https://enpcdhhfsnmlhlplnycu.supabase.co/rest/v1/products?select=id,sku,product_name,category_id,gsm_id&limit=20',
         {
           headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU'
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueGN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueGN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU'
           }
         }
       );
@@ -32,7 +32,7 @@ export default function ProductsPage() {
       }
       
       const data = await response.json();
-      console.log('Products with category names:', data);
+      console.log('Raw product data:', data[0]);
       setProducts(data || []);
       
     } catch (err) {
@@ -70,8 +70,8 @@ export default function ProductsPage() {
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>
-        <h2>Loading products with category names...</h2>
-        <p>Fetching from Supabase database</p>
+        <h2>Loading products...</h2>
+        <p>Please wait</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function ProductsPage() {
     }}>
       {/* Header */}
       <div style={{ 
-        background: 'linear-gradient(135deg, #0070f3 0%, #0056cc 100%)',
+        background: '#0070f3',
         color: 'white',
         padding: '20px',
         borderRadius: '8px',
@@ -93,7 +93,7 @@ export default function ProductsPage() {
       }}>
         <h1 style={{ margin: '0 0 10px 0' }}>Product Catalog</h1>
         <p style={{ margin: 0, opacity: 0.9 }}>
-          {products.length} products • Now showing CATEGORY NAMES
+          {products.length} products loaded from database
         </p>
         <button
           onClick={fetchProducts}
@@ -124,7 +124,7 @@ export default function ProductsPage() {
           borderBottom: '1px solid #e9ecef'
         }}>
           <p style={{ margin: 0, fontWeight: 'bold', color: '#495057' }}>
-            Showing {products.length} products with category names
+            Showing {products.length} products
           </p>
         </div>
 
@@ -133,8 +133,8 @@ export default function ProductsPage() {
             <tr style={{ background: '#f8f9fa' }}>
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>SKU</th>
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Product Name</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Category Name</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>GSM Name</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Category ID</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>GSM ID</th>
             </tr>
           </thead>
           <tbody>
@@ -157,32 +157,10 @@ export default function ProductsPage() {
                   {product.product_name || 'No description'}
                 </td>
                 <td style={{ padding: '12px' }}>
-                  {/* ✅ Shows CATEGORY NAME, not ID */}
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 8px',
-                    background: '#d1e7dd',
-                    color: '#0f5132',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}>
-                    {product.category?.name || product.category_id || 'Uncategorized'}
-                  </span>
+                  {product.category_id || 'N/A'}
                 </td>
                 <td style={{ padding: '12px' }}>
-                  {/* ✅ Shows GSM NAME, not ID */}
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 8px',
-                    background: '#fff3cd',
-                    color: '#856404',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}>
-                    {product.gsm?.name || product.gsm_id || 'N/A'}
-                  </span>
+                  {product.gsm_id || 'N/A'}
                 </td>
               </tr>
             ))}
@@ -190,23 +168,44 @@ export default function ProductsPage() {
         </table>
       </div>
 
-      {/* Debug Info */}
+      {/* ✅ VISIBLE DEBUG BOX - This WILL appear */}
       <div style={{ 
         marginTop: '20px', 
+        padding: '15px', 
+        background: '#d1e7dd',
+        border: '1px solid #badbcc',
+        borderRadius: '8px',
+        color: '#0f5132'
+      }}>
+        <h3 style={{ margin: '0 0 10px 0' }}>✅ Database Connected Successfully!</h3>
+        <p style={{ margin: '0 0 5px 0' }}>Total products in database: 604 • Showing first 20</p>
+        <p style={{ margin: '0 0 5px 0' }}>Current showing IDs. To show category names:</p>
+        <p style={{ margin: '0', fontWeight: 'bold' }}>
+          We need to JOIN with category table. Category ID {products[0]?.category_id} needs to be looked up in category table.
+        </p>
+      </div>
+
+      {/* Additional Debug Info */}
+      <div style={{ 
+        marginTop: '10px', 
         padding: '15px', 
         background: '#e7f1ff',
         border: '1px solid #cfe2ff',
         borderRadius: '8px',
         color: '#084298'
       }}>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>
-          🔍 Debug Information:
+        <h4 style={{ margin: '0 0 10px 0' }}>🔍 Debug Information:</h4>
+        <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}>
+          <strong>First Product SKU:</strong> {products[0]?.sku || 'None'}
         </p>
-        <p style={{ margin: '5px 0 0 0', fontSize: '14px' }}>
-          First product data: {JSON.stringify(products[0] || {})}
+        <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}>
+          <strong>Category ID:</strong> {products[0]?.category_id || 'None'}
         </p>
-        <p style={{ margin: '5px 0 0 0', fontSize: '14px' }}>
-          Category field: {products[0]?.category ? 'Exists' : 'Missing'}
+        <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}>
+          <strong>GSM ID:</strong> {products[0]?.gsm_id || 'None'}
+        </p>
+        <p style={{ margin: '0', fontSize: '14px' }}>
+          <strong>To get names:</strong> Need to fetch from category and gsm tables
         </p>
       </div>
 
