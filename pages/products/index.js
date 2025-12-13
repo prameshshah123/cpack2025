@@ -12,7 +12,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      // NEW: Get category and gsm NAMES by joining tables
+      // Get products with category and GSM names
       const response = await fetch(
         `https://enpcdhhfsnmlhlplnycu.supabase.co/rest/v1/products?select=id,sku,product_name,dimension,ink,coating,folding,artwork_pdf,artwork_cdr,category_id,gsm_id,category:category_id(name),gsm:gsm_id(name)&order=sku.asc&limit=100`,
         {
@@ -24,7 +24,7 @@ export default function ProductsPage() {
       );
       
       const data = await response.json();
-      console.log('Products with categories:', data);
+      console.log('Products loaded:', data.length);
       setProducts(data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -310,7 +310,7 @@ export default function ProductsPage() {
                             fontSize: '14px',
                             fontWeight: '600'
                           }}>
-                            {/* FIXED: Shows category NAME instead of ID */}
+                            {/* Shows category NAME instead of ID */}
                             {product.category?.name || product.category_id || 'Uncategorized'}
                           </span>
                         </td>
@@ -324,7 +324,7 @@ export default function ProductsPage() {
                             fontSize: '14px',
                             fontWeight: '600'
                           }}>
-                            {/* FIXED: Shows GSM NAME instead of ID */}
+                            {/* Shows GSM NAME instead of ID */}
                             {product.gsm?.name || product.gsm_id || 'N/A'}
                           </span>
                         </td>
