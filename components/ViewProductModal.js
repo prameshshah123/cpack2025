@@ -1,93 +1,86 @@
-// components/ViewProductModal.js
 export default function ViewProductModal({ product, onClose, categories, gsmTypes }) {
   return (
-    <div className="modal-overlay">
-      <div className="modal">
-        <div className="modal-header">
-          <h2>Product Details</h2>
-          <button onClick={onClose} className="close-btn">×</button>
-        </div>
-        <div className="modal-body">
-          <div className="product-detail">
-            <h3>{product.product_name}</h3>
-            <p><strong>SKU:</strong> {product.sku}</p>
-            <p><strong>Artwork Code:</strong> {product.artwork_code || 'N/A'}</p>
-            <p><strong>Category:</strong> {categories[product.category_id] || 'N/A'}</p>
-            <p><strong>GSM:</strong> {gsmTypes[product.gsm_id] || 'N/A'}</p>
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button onClick={onClose} className="btn-close">Close</button>
+    <div style={styles.modalOverlay}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <h2 style={styles.modalTitle}>Product Details</h2>
+          <button onClick={onClose} style={styles.closeButton}>×</button>
         </div>
         
-        <style jsx>{`
-          .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-          .modal {
-            background: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-          }
-          .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          .modal-header h2 {
-            margin: 0;
-            color: #1e293b;
-          }
-          .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #64748b;
-          }
-          .modal-body {
-            padding: 20px;
-            flex: 1;
-            overflow-y: auto;
-          }
-          .product-detail {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-          }
-          .modal-footer {
-            padding: 20px;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-          }
-          .btn-close {
-            padding: 10px 20px;
-            background: #1e3a8a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-          }
-        `}</style>
-      </div>
-    </div>
-  );
-}
+        <div style={styles.modalBody}>
+          <div style={styles.productHeader}>
+            <h3 style={styles.productName}>{product.product_name}</h3>
+            <span style={styles.productSku}>SKU: {product.sku}</span>
+          </div>
+
+          <div style={styles.detailsGrid}>
+            <div style={styles.detailSection}>
+              <h4 style={styles.sectionTitle}>Basic Information</h4>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>Artwork Code:</span>
+                <span style={styles.detailValue}>{product.artwork_code || 'N/A'}</span>
+              </div>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>Category:</span>
+                <span style={styles.detailValue}>{categories[product.category_id] || 'N/A'}</span>
+              </div>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>GSM:</span>
+                <span style={styles.detailValue}>{gsmTypes[product.gsm_id] || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div style={styles.detailSection}>
+              <h4 style={styles.sectionTitle}>Specifications</h4>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>Size:</span>
+                <span style={styles.detailValue}>{product.size || 'N/A'}</span>
+              </div>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>UPS:</span>
+                <span style={styles.detailValue}>{product.ups || 'N/A'}</span>
+              </div>
+              <div style={styles.detailItem}>
+                <span style={styles.detailLabel}>Dimension:</span>
+                <span style={styles.detailValue}>{product.dimension || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div style={styles.detailSection}>
+              <h4 style={styles.sectionTitle}>Artwork Files</h4>
+              <div style={styles.fileSection}>
+                {product.artwork_cdr ? (
+                  <div style={styles.fileItem}>
+                    <div style={styles.fileIconCdr}>CDR</div>
+                    <a href={product.artwork_cdr} target="_blank" rel="noopener noreferrer" style={styles.fileLink}>
+                      Download CorelDRAW File
+                    </a>
+                  </div>
+                ) : (
+                  <div style={styles.fileItem}>
+                    <div style={styles.fileIconDisabled}>CDR</div>
+                    <span style={styles.noFile}>No CDR file</span>
+                  </div>
+                )}
+                
+                {product.artwork_pdf ? (
+                  <div style={styles.fileItem}>
+                    <div style={styles.fileIconPdf}>PDF</div>
+                    <a href={product.artwork_pdf} target="_blank" rel="noopener noreferrer" style={styles.fileLink}>
+                      Download PDF File
+                    </a>
+                  </div>
+                ) : (
+                  <div style={styles.fileItem}>
+                    <div style={styles.fileIconDisabled}>PDF</div>
+                    <span style={styles.noFile}>No PDF file</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.modalFooter}>
+          <button onClick={onClose} style={styles.closeModalButton}>
+            Close
