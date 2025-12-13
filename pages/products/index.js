@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// Add this line at the very top
+// Version: 1.0.0 - Added sidebarimport { useState, useEffect } from 'react';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
