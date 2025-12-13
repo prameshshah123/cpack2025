@@ -1,13 +1,27 @@
+// pages/products/index.js
 import { useState, useEffect } from 'react';
+import Sidebar from '../../components/Sidebar';
+import AddProductModal from '../../components/AddProductModal';
+import ViewProductModal from '../../components/ViewProductModal';
+
+const SUPABASE_URL = 'https://enpcdhhfsnmlhlplnycu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState({});
+  const [gsmTypes, setGsmTypes] = useState({});
+  const [paperTypes, setPaperTypes] = useState({});
+  const [sizes, setSizes] = useState({});
+  const [specifications, setSpecifications] = useState({});
+  const [constructions, setConstructions] = useState({});
+  const [specialEffects, setSpecialEffects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categoryNames, setCategoryNames] = useState({});
-  const [gsmNames, setGsmNames] = useState({});
-  const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     fetchAllData();
@@ -16,267 +30,273 @@ export default function ProductsPage() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVucGNkaGhmc25tbGhscGxueWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0ODIzMTEsImV4cCI6MjA4MDA1ODMxMX0.AW0m2SailxdtoIqNvLAZ7iVA0elWp0AoCAq5FpedDVU';
-      const baseUrl = 'https://enpcdhhfsnmlhlplnycu.supabase.co/rest/v1';
       
       const headers = {
-        'apikey': apiKey,
-        'Content-Type': 'application/json'
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
       };
 
-      // Fetch all data
-      const [productsRes, categoriesRes, gsmRes] = await Promise.all([
-        fetch(`${baseUrl}/products?select=id,sku,product_name,category_id,gsm_id&order=sku.asc`, { headers }),
-        fetch(`${baseUrl}/category?select=id,name`, { headers }),
-        fetch(`${baseUrl}/gsm?select=id,name`, { headers })
+      // Fetch all related data in parallel
+      const [
+        productsRes,
+        categoriesRes,
+        gsmRes,
+        paperTypesRes,
+        sizesRes,
+        specificationsRes,
+        constructionsRes,
+        specialEffectsRes
+      ] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=sku.asc`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/category?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/gsm?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/paper_types?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/sizes?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/specifications?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/constructions?select=id,name`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/special_effects?select=id,name`, { headers })
       ]);
 
-      // Check responses
-      if (!productsRes.ok) throw new Error(`Products failed: ${productsRes.status}`);
-      if (!categoriesRes.ok) throw new Error(`Categories failed: ${categoriesRes.status}`);
-      if (!gsmRes.ok) throw new Error(`GSM failed: ${gsmRes.status}`);
-
-      // Parse JSON
+      // Parse responses
       const productsData = await productsRes.json();
       const categoriesData = await categoriesRes.json();
       const gsmData = await gsmRes.json();
+      const paperTypesData = await paperTypesRes.json();
+      const sizesData = await sizesRes.json();
+      const specificationsData = await specificationsRes.json();
+      const constructionsData = await constructionsRes.json();
+      const specialEffectsData = await specialEffectsRes.json();
 
       // Create lookup objects
       const categoryMap = {};
-      categoriesData.forEach(cat => {
-        if (cat && cat.id !== undefined) {
-          categoryMap[cat.id] = cat.name || 'Unknown Category';
-        }
-      });
+      categoriesData.forEach(item => categoryMap[item.id] = item.name);
 
       const gsmMap = {};
-      gsmData.forEach(gsm => {
-        if (gsm && gsm.id !== undefined) {
-          gsmMap[gsm.id] = gsm.name || 'Unknown GSM';
-        }
-      });
+      gsmData.forEach(item => gsmMap[item.id] = item.name);
+
+      const paperTypeMap = {};
+      paperTypesData.forEach(item => paperTypeMap[item.id] = item.name);
+
+      const sizeMap = {};
+      sizesData.forEach(item => sizeMap[item.id] = item.name);
+
+      const specMap = {};
+      specificationsData.forEach(item => specMap[item.id] = item.name);
+
+      const constructionMap = {};
+      constructionsData.forEach(item => constructionMap[item.id] = item.name);
 
       // Set state
-      setProducts(Array.isArray(productsData) ? productsData : []);
-      setCategoryNames(categoryMap);
-      setGsmNames(gsmMap);
+      setProducts(productsData);
+      setCategories(categoryMap);
+      setGsmTypes(gsmMap);
+      setPaperTypes(paperTypeMap);
+      setSizes(sizeMap);
+      setSpecifications(specMap);
+      setConstructions(constructionMap);
+      setSpecialEffects(specialEffectsData);
 
-    } catch (err) {
-      console.error('Fetch error:', err);
-      setError(err.message || 'Failed to fetch data');
-      
-      // Fallback mock data for testing
-      const mockProducts = [
-        { id: 1, sku: '19', product_name: 'BD Dapto 350 mg Cartons', category_id: 2, gsm_id: 19 },
-        { id: 2, sku: '20', product_name: 'BD Dapto 350 MG Labels', category_id: 4, gsm_id: 5 },
-        { id: 3, sku: '21', product_name: 'BD DAPTO Inserts', category_id: 3, gsm_id: 4 },
-        { id: 4, sku: '22', product_name: 'Amoxycillin 500mg Tablets', category_id: 2, gsm_id: 19 },
-        { id: 5, sku: '23', product_name: 'Paracetamol 500mg Pack', category_id: 1, gsm_id: 3 }
-      ];
-      
-      const mockCategories = {
-        1: 'Tablets',
-        2: 'Cartons',
-        3: 'Inserts',
-        4: 'Labels',
-        5: 'Packaging'
-      };
-      
-      const mockGsm = {
-        3: '80 GSM',
-        4: '100 GSM',
-        5: '120 GSM',
-        19: '250 GSM'
-      };
-
-      setProducts(mockProducts);
-      setCategoryNames(mockCategories);
-      setGsmNames(mockGsm);
-      
+    } catch (error) {
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter products
+  const handleViewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowViewModal(true);
+  };
+
   const filteredProducts = products.filter(product => {
-    if (!product) return false;
-    
-    const matchesSearch = 
-      (product.product_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (product.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = 
-      selectedCategory === 'all' || 
-      product.category_id?.toString() === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      product.product_name?.toLowerCase().includes(searchLower) ||
+      product.sku?.toLowerCase().includes(searchLower) ||
+      product.artwork_code?.toLowerCase().includes(searchLower)
+    );
   });
-
-  // Get unique categories for filter
-  const categories = Object.entries(categoryNames).map(([id, name]) => ({
-    id: parseInt(id),
-    name
-  }));
-
-  const getCategoryName = (id) => {
-    return categoryNames[id] || `Category ${id}`;
-  };
-
-  const getGsmName = (id) => {
-    return gsmNames[id] || `GSM ${id}`;
-  };
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.spinner}></div>
-        <h2 style={styles.loadingText}>Loading Products...</h2>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <h2>Loading Products...</h2>
+        <style jsx>{`
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #f8fafc;
+          }
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+          }
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>📦 Product Catalog</h1>
-          <p style={styles.subtitle}>Manage and browse your product inventory</p>
-        </div>
-        <button 
-          style={styles.refreshButton}
-          onClick={fetchAllData}
-        >
-          🔄 Refresh Data
-        </button>
-      </div>
+    <div className="container">
+      {/* Mobile Menu Button */}
+      <button 
+        className="mobile-menu-btn"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        ☰
+      </button>
 
-      {/* Stats Cards */}
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>📊</div>
-          <div>
-            <h3 style={styles.statNumber}>{products.length}</h3>
-            <p style={styles.statLabel}>Total Products</p>
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>🏷️</div>
-          <div>
-            <h3 style={styles.statNumber}>{Object.keys(categoryNames).length}</h3>
-            <p style={styles.statLabel}>Categories</p>
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>📄</div>
-          <div>
-            <h3 style={styles.statNumber}>{Object.keys(gsmNames).length}</h3>
-            <p style={styles.statLabel}>GSM Types</p>
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statIcon}>🔍</div>
-          <div>
-            <h3 style={styles.statNumber}>{filteredProducts.length}</h3>
-            <p style={styles.statLabel}>Showing</p>
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Error Message */}
-      {error && (
-        <div style={styles.errorContainer}>
-          <div style={styles.errorMessage}>
-            ⚠️ <strong>Error:</strong> {error}
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Header */}
+        <div className="header">
+          <div>
+            <h1 className="title">CreativePack Products</h1>
+            <p className="subtitle">
+              {filteredProducts.length} of {products.length} products
+            </p>
           </div>
           <button 
-            style={styles.tryAgainButton}
-            onClick={fetchAllData}
+            className="add-btn"
+            onClick={() => setShowAddModal(true)}
           >
-            Try Again
+            + Add Product
           </button>
         </div>
-      )}
 
-      {/* Filters */}
-      <div style={styles.filtersContainer}>
-        <div style={styles.searchBox}>
+        {/* Search */}
+        <div className="search-container">
           <input
             type="text"
-            placeholder="Search by SKU or product name..."
+            placeholder="Search by product name, SKU, or artwork code..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.searchInput}
+            className="search-input"
           />
-          <span style={styles.searchIcon}>🔍</span>
+          <span className="search-icon">🔍</span>
         </div>
-        
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          style={styles.categorySelect}
-        >
-          <option value="all">All Categories</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
 
-      {/* Products Table */}
-      <div style={styles.tableContainer}>
-        {filteredProducts.length === 0 ? (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📭</div>
-            <h3>No products found</h3>
-            <p>Try adjusting your search or filter criteria</p>
-          </div>
-        ) : (
-          <table style={styles.table}>
+        {/* Products Table */}
+        <div className="table-container">
+          <table className="table">
             <thead>
-              <tr style={styles.tableHeader}>
-                <th style={styles.th}>SKU</th>
-                <th style={styles.th}>Product Name</th>
-                <th style={styles.th}>Category</th>
-                <th style={styles.th}>GSM</th>
-                <th style={styles.th}>Actions</th>
+              <tr className="table-header">
+                <th>Product Details</th>
+                <th>Category</th>
+                <th>Specifications</th>
+                <th>Artwork Files</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.map((product) => (
-                <tr key={product.id} style={styles.tableRow}>
-                  <td style={styles.td}>
-                    <span style={styles.skuBadge}>
-                      #{product.sku}
+                <tr key={product.id} className="table-row">
+                  <td>
+                    <div className="product-details">
+                      <strong className="product-name">{product.product_name}</strong>
+                      <div className="sku">SKU: {product.sku}</div>
+                      {product.artwork_code && (
+                        <div className="artwork-code">
+                          <span className="artwork-badge">🎨 {product.artwork_code}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  
+                  <td>
+                    <span className="category-badge">
+                      {categories[product.category_id] || 'N/A'}
                     </span>
                   </td>
-                  <td style={styles.td}>
-                    <strong style={styles.productName}>{product.product_name}</strong>
+                  
+                  <td>
+                    <div className="specs-grid">
+                      {product.gsm_id && (
+                        <div className="spec-item">
+                          <span className="spec-label">GSM:</span>
+                          <span className="spec-value">{gsmTypes[product.gsm_id]}</span>
+                        </div>
+                      )}
+                      {product.size_id && (
+                        <div className="spec-item">
+                          <span className="spec-label">Size:</span>
+                          <span className="spec-value">{sizes[product.size_id]}</span>
+                        </div>
+                      )}
+                      {product.paper_type_id && (
+                        <div className="spec-item">
+                          <span className="spec-label">Paper:</span>
+                          <span className="spec-value">{paperTypes[product.paper_type_id]}</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td style={styles.td}>
-                    <span style={styles.categoryBadge}>
-                      {getCategoryName(product.category_id)}
-                    </span>
+                  
+                  <td>
+                    <div className="file-icons">
+                      {product.artwork_cdr && (
+                        <a 
+                          href={product.artwork_cdr}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="file-icon cdr"
+                          title="CorelDRAW File"
+                        >
+                          <div className="file-icon-bg">CDR</div>
+                        </a>
+                      )}
+                      {product.artwork_pdf && (
+                        <a 
+                          href={product.artwork_pdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="file-icon pdf"
+                          title="PDF File"
+                        >
+                          <div className="file-icon-bg">PDF</div>
+                        </a>
+                      )}
+                      {!product.artwork_cdr && !product.artwork_pdf && (
+                        <span className="no-files">No files</span>
+                      )}
+                    </div>
                   </td>
-                  <td style={styles.td}>
-                    <span style={styles.gsmBadge}>
-                      {getGsmName(product.gsm_id)}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.actionButtons}>
-                      <button style={styles.iconButton} title="View Details">
+                  
+                  <td>
+                    <div className="action-buttons">
+                      <button 
+                        onClick={() => handleViewProduct(product)}
+                        className="action-btn view"
+                        title="View Details"
+                      >
                         👁️
                       </button>
-                      <button style={styles.iconButton} title="Edit">
+                      <button 
+                        className="action-btn edit"
+                        title="Edit Product"
+                      >
                         ✏️
                       </button>
-                      <button style={styles.iconButton} title="Delete">
+                      <button 
+                        className="action-btn delete"
+                        title="Delete Product"
+                      >
                         🗑️
                       </button>
                     </div>
@@ -285,295 +305,388 @@ export default function ProductsPage() {
               ))}
             </tbody>
           </table>
-        )}
+          
+          {filteredProducts.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">📭</div>
+              <h3>No products found</h3>
+              <p>Try adjusting your search or add a new product</p>
+              <button 
+                className="add-btn"
+                onClick={() => setShowAddModal(true)}
+              >
+                + Add Product
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Footer */}
-      <div style={styles.footer}>
-        <p>
-          Product Catalog • {new Date().getFullYear()} • 
-          {filteredProducts.length} of {products.length} products displayed
-        </p>
-      </div>
+      {/* Modals */}
+      {showAddModal && (
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            fetchAllData();
+          }}
+          categories={categories}
+          gsmTypes={gsmTypes}
+          paperTypes={paperTypes}
+          sizes={sizes}
+          specifications={specifications}
+          constructions={constructions}
+          specialEffects={specialEffects}
+        />
+      )}
+
+      {showViewModal && selectedProduct && (
+        <ViewProductModal
+          product={selectedProduct}
+          categories={categories}
+          gsmTypes={gsmTypes}
+          paperTypes={paperTypes}
+          sizes={sizes}
+          specifications={specifications}
+          constructions={constructions}
+          onClose={() => setShowViewModal(false)}
+        />
+      )}
+
+      <style jsx>{`
+        .container {
+          display: flex;
+          min-height: 100vh;
+          background: #f8fafc;
+          font-family: 'Montserrat', sans-serif;
+        }
+
+        .mobile-menu-btn {
+          position: fixed;
+          top: 20px;
+          left: 20px;
+          z-index: 100;
+          background: #1e3a8a;
+          color: white;
+          border: none;
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          font-size: 20px;
+          cursor: pointer;
+          display: none;
+        }
+
+        .main-content {
+          flex: 1;
+          padding: 20px;
+          margin-left: 0;
+        }
+
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 30px;
+          padding: 20px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+          margin: 0;
+          color: #1e3a8a;
+          font-size: 28px;
+          font-weight: 700;
+        }
+
+        .subtitle {
+          margin: 5px 0 0 0;
+          color: #64748b;
+          font-size: 14px;
+        }
+
+        .add-btn {
+          padding: 10px 20px;
+          background: #1e3a8a;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+          font-family: 'Montserrat', sans-serif;
+        }
+
+        .add-btn:hover {
+          background: #1d4ed8;
+          transform: translateY(-2px);
+        }
+
+        .search-container {
+          position: relative;
+          margin-bottom: 20px;
+          max-width: 500px;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 12px 20px 12px 45px;
+          border: 2px solid #e2e8f0;
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: 'Montserrat', sans-serif;
+          transition: all 0.3s;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #1e3a8a;
+          box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 15px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
+        }
+
+        .table-container {
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          overflow-x: auto;
+        }
+
+        .table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 800px;
+        }
+
+        .table-header {
+          background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+          color: white;
+        }
+
+        .table-header th {
+          padding: 16px 20px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .table-row {
+          border-bottom: 1px solid #e2e8f0;
+          transition: background-color 0.2s;
+        }
+
+        .table-row:hover {
+          background-color: #f8fafc;
+        }
+
+        .table-row td {
+          padding: 16px 20px;
+          vertical-align: top;
+        }
+
+        .product-details {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .product-name {
+          color: #1e293b;
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .sku {
+          color: #64748b;
+          font-size: 12px;
+          background: #f1f5f9;
+          padding: 4px 8px;
+          border-radius: 4px;
+          display: inline-block;
+          width: fit-content;
+        }
+
+        .artwork-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: #e0e7ff;
+          color: #3730a3;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .category-badge {
+          display: inline-block;
+          padding: 6px 12px;
+          background: #dcfce7;
+          color: #166534;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .specs-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .spec-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .spec-label {
+          color: #64748b;
+          font-size: 12px;
+          min-width: 40px;
+        }
+
+        .spec-value {
+          color: #1e293b;
+          font-size: 12px;
+          font-weight: 500;
+          background: #f8fafc;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        .file-icons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .file-icon {
+          text-decoration: none;
+          display: inline-flex;
+        }
+
+        .file-icon-bg {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 12px;
+          transition: transform 0.2s;
+        }
+
+        .file-icon.cdr .file-icon-bg {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .file-icon.pdf .file-icon-bg {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+
+        .file-icon:hover .file-icon-bg {
+          transform: translateY(-2px);
+        }
+
+        .no-files {
+          color: #94a3b8;
+          font-size: 12px;
+          font-style: italic;
+        }
+
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .action-btn {
+          width: 36px;
+          height: 36px;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .action-btn.view {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .action-btn.edit {
+          background: #dcfce7;
+          color: #166534;
+        }
+
+        .action-btn.delete {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+
+        .action-btn:hover {
+          transform: translateY(-2px);
+          opacity: 0.9;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        .empty-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+          opacity: 0.5;
+        }
+
+        .empty-state h3 {
+          margin: 0 0 8px 0;
+          color: #1e293b;
+        }
+
+        .empty-state p {
+          margin: 0 0 20px 0;
+          color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-menu-btn {
+            display: block;
+          }
+          
+          .main-content {
+            margin-left: 0;
+            padding: 15px;
+          }
+          
+          .header {
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px;
+          }
+          
+          .title {
+            font-size: 24px;
+          }
+        }
+      `}</style>
     </div>
   );
-}
-
-// Styles using plain JavaScript objects
-const styles = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif'
-  },
-
-  // Loading Styles
-  loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-  },
-  spinner: {
-    width: '50px',
-    height: '50px',
-    border: '5px solid #f3f3f3',
-    borderTop: '5px solid #3498db',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginBottom: '20px'
-  },
-  loadingText: {
-    color: '#2c3e50',
-    margin: 0
-  },
-
-  // Header Styles
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '30px',
-    padding: '20px',
-    background: 'white',
-    borderRadius: '15px',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-  },
-  title: {
-    margin: 0,
-    color: '#2c3e50',
-    fontSize: '2rem'
-  },
-  subtitle: {
-    margin: '5px 0 0 0',
-    color: '#7f8c8d'
-  },
-  refreshButton: {
-    padding: '12px 24px',
-    background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
-    transition: 'all 0.3s'
-  },
-
-  // Stats Grid
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '20px',
-    marginBottom: '30px'
-  },
-  statCard: {
-    background: 'white',
-    padding: '20px',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    transition: 'transform 0.2s'
-  },
-  statIcon: {
-    fontSize: '2rem',
-    marginRight: '15px'
-  },
-  statNumber: {
-    margin: 0,
-    fontSize: '1.8rem',
-    color: '#2c3e50'
-  },
-  statLabel: {
-    margin: '5px 0 0 0',
-    color: '#7f8c8d',
-    fontSize: '0.9rem'
-  },
-
-  // Error Styles
-  errorContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: '#ffeaa7',
-    border: '2px solid #fdcb6e',
-    borderRadius: '10px',
-    padding: '20px',
-    marginBottom: '30px'
-  },
-  errorMessage: {
-    margin: 0,
-    color: '#d63031'
-  },
-  tryAgainButton: {
-    padding: '8px 16px',
-    background: '#95a5a6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-
-  // Filters
-  filtersContainer: {
-    display: 'flex',
-    gap: '20px',
-    marginBottom: '30px',
-    flexWrap: 'wrap'
-  },
-  searchBox: {
-    flex: 1,
-    minWidth: '300px',
-    position: 'relative'
-  },
-  searchInput: {
-    width: '100%',
-    padding: '12px 20px 12px 45px',
-    border: '2px solid #e0e6ed',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    boxSizing: 'border-box'
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: '15px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    color: '#95a5a6'
-  },
-  categorySelect: {
-    padding: '12px 20px',
-    border: '2px solid #e0e6ed',
-    borderRadius: '10px',
-    fontSize: '1rem',
-    background: 'white',
-    minWidth: '200px',
-    cursor: 'pointer'
-  },
-
-  // Table Styles
-  tableContainer: {
-    background: 'white',
-    borderRadius: '15px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    marginBottom: '30px',
-    overflowX: 'auto'
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: '600px'
-  },
-  tableHeader: {
-    background: 'linear-gradient(135deg, #3498db 0%, #2c3e50 100%)',
-    color: 'white'
-  },
-  th: {
-    padding: '15px 20px',
-    textAlign: 'left',
-    fontWeight: '600',
-    borderBottom: '2px solid #3498db'
-  },
-  tableRow: {
-    borderBottom: '1px solid #e0e6ed'
-  },
-  td: {
-    padding: '15px 20px'
-  },
-
-  // Badges
-  skuBadge: {
-    background: '#e3f2fd',
-    color: '#1565c0',
-    padding: '5px 10px',
-    borderRadius: '20px',
-    fontWeight: '600',
-    fontSize: '0.9rem',
-    display: 'inline-block'
-  },
-  categoryBadge: {
-    background: '#e8f5e9',
-    color: '#2e7d32',
-    padding: '6px 12px',
-    borderRadius: '20px',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    display: 'inline-block'
-  },
-  gsmBadge: {
-    background: '#fff3e0',
-    color: '#ef6c00',
-    padding: '6px 12px',
-    borderRadius: '20px',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    display: 'inline-block'
-  },
-
-  // Action Buttons
-  actionButtons: {
-    display: 'flex',
-    gap: '8px'
-  },
-  iconButton: {
-    background: 'none',
-    border: 'none',
-    padding: '8px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-
-  // Product Name
-  productName: {
-    color: '#2c3e50'
-  },
-
-  // Empty State
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 20px'
-  },
-  emptyIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px',
-    opacity: 0.5
-  },
-
-  // Footer
-  footer: {
-    textAlign: 'center',
-    padding: '20px',
-    color: '#7f8c8d',
-    fontSize: '0.9rem'
-  }
-};
-
-// Add CSS for spinner animation
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    button:hover {
-      opacity: 0.9;
-      transform: translateY(-2px);
-    }
-    
-    tr:hover {
-      background-color: #f8fafc !important;
-    }
-  `;
-  document.head.appendChild(style);
 }
